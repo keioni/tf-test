@@ -1,5 +1,3 @@
-# VPC resource
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet
 resource "aws_vpc" "main" {
   cidr_block = var.vpc_cidr_block
 
@@ -12,26 +10,21 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Subnet resource
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet
 resource "aws_subnet" "main" {
   count = 3
 
   vpc_id            = aws_vpc.main.id
-  az                = var.aws_azs[count.index]
-  availability_zone = "${var.aws_region}${az}"
+  availability_zone = "${var.aws_region}${var.aws_azs[count.index]}"
   cidr_block        = cidrsubnet(var.vpc_cidr_block, 8, count.index)
-  ipv6_cidr_block   = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, parseint("0${az}", 16))
+  ipv6_cidr_block   = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, parseint("0${var.aws_azs[count.index]}", 16))
 
   assign_ipv6_address_on_creation = true
 
   tags = {
-    Name = "net-${var.app}-${var.env}-${az}"
+    Name = "net-${var.app}-${var.env}-${var.aws_azs[count.index]}"
   }
 }
 
-# IGW resource
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -40,8 +33,6 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Route Table resource
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table
 resource "aws_route_table" "main" {
   vpc_id = aws_vpc.main.id
 
